@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UP Board School Portal 2026</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; padding: 15px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .header { background: #1a237e; color: white; padding: 25px; text-align: center; border-radius: 10px; margin-bottom: 20px; }
+    .top-controls { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; gap: 15px; align-items: center; flex-wrap: wrap; margin-bottom: 25px; }
+    .nav-tabs { display: flex; gap: 8px; margin-bottom: 25px; flex-wrap: wrap; justify-content: center; }
+    .tab-btn { padding: 12px 28px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; background: #e0e0e0; transition: all 0.2s; }
+    .tab-btn.active { background: #ff5722; color: white; }
+    .filter-row { background: white; padding: 12px 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 20px; justify-content: space-between; }
+    table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    th { background: #3f51b5; color: white; padding: 12px; }
+    td { padding: 10px; border-bottom: 1px solid #ddd; text-align: center; }
+    .badge { padding: 6px 12px; border-radius: 20px; font-weight: bold; }
+    .pass { background: #e8f5e9; color: #2e7d32; }
+    .fail { background: #ffebee; color: #c62828; }
+    .low-marks { color: #c62828; font-weight: bold; }
+    .action-btn { padding: 8px 16px; border: none; border-radius: 5px; color: white; cursor: pointer; font-size: 0.95rem; }
+    .print-btn { background: #d81b60; }
+    .print-single-btn { background: #e91e63; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; }
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 1000; justify-content: center; align-items: flex-start; padding: 10px; }
+    .modal-content { background: white; width: 100%; max-width: 220mm; height: 100vh; overflow-y: auto; position: relative; }
+
+    /* ── STRONG PRINT STYLES ─────────────────────────────────────────────── */
+    @page {
+      size: A4 portrait;
+      margin: 0;
+    }
+
+    @media print {
+      body, html {
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      .no-print { display: none !important; }
+
+      body > *:not(#myModal) { display: none !important; }
+
+      #myModal {
+        display: block !important;
+        position: static !important;
+        background: white !important;
+        inset: unset !important;
+        width: 100% !important;
+        height: auto !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+
+      .modal-content {
+        width: 210mm !important;
+        min-height: 297mm !important;
+        height: auto !important;
+        max-width: none !important;
+        overflow: visible !important;
+        padding: 0 !important;
+        margin: 0 auto !important;
+        box-shadow: none !important;
+        background: white !important;
+      }
+
+      .card.one-per-page {
+        width: 210mm !important;
+        min-height: 297mm !important;
+        height: 297mm !important;
+        max-height: 297mm !important;
+        page-break-after: always !important;
+        break-after: page !important;
+        margin: 0 !important;
+        padding: 15mm 18mm !important;
+        box-sizing: border-box !important;
+        background: white !important;
+        position: relative !important;
+        overflow: hidden !important;
+        break-inside: avoid-page !important;
+      }
+
+      .card.one-per-page:last-child {
+        page-break-after: auto !important;
+        break-after: auto !important;
+      }
+
+      .card.one-per-page * {
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>SURAJ BOARD OF EDUCATION, U.P.</h1>
+      <p>Management System - Academic Session 2025-26</p>
+    </div>
+
+    <div class="top-controls">
+      <label><b>Class:</b></label>
+      <select id="classPick" onchange="loadData()">
+        <option value="5">Class 5</option>
+        <option value="6">Class 6</option>
+        <option value="7">Class 7</option>
+        <option value="8">Class 8</option>
+        <option value="9">Class 9</option>
+        <option value="10" selected>Class 10</option>
+      </select>
+
+      <div style="margin-left: auto; display: flex; gap: 10px;">
+        <input type="text" id="sRoll" placeholder="Roll No">
+        <input type="text" id="sApp" placeholder="App No">
+        <button onclick="searchOnline()">Check Result</button>
+      </div>
+    </div>
+
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('res', this)">Result Sheet</button>
+      <button class="tab-btn" onclick="switchTab('allmarks', this)">All Subjects Marks</button>
+      <button class="tab-btn" onclick="switchTab('adm', this)">Admit Cards</button>
+    </div>
+
+    <!-- Result Sheet Tab -->
+    <div id="resTab" class="tab-content">
+      <table>
+        <thead>
+          <tr>
+            <th>Roll No</th><th>Name</th><th>Total</th><th>Percentage</th><th>Grade</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="resBody"></tbody>
+      </table>
+    </div>
+
+    <!-- All Subjects Marks Tab -->
+    <div id="allmarksTab" class="tab-content" style="display:none;">
+      <div class="filter-row">
+        <div class="filter-group">
+          <label><b>Filter:</b></label>
+          <select id="filterStatus">
+            <option value="all">All</option>
+            <option value="pass">Pass</option>
+            <option value="fail">Fail</option>
+          </select>
+          <select id="filterSort">
+            <option value="roll">Roll No</option>
+            <option value="highlow">% High → Low</option>
+            <option value="lowhigh">% Low → High</option>
+          </select>
+          <button onclick="loadAllMarksTable()">Apply</button>
+        </div>
+        <div class="bulk-group">
+          <button class="action-btn print-btn" onclick="bulkPrintMarksheets()">Bulk Print Marksheets (1/page)</button>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Roll No</th><th>Name</th>
+            <th>Hindi</th><th>English</th><th>Math</th><th>Science</th><th>SST</th>
+            <th>Total</th><th>%</th><th>Grade</th><th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="allMarksBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Admit Cards Tab -->
+    <div id="admTab" class="tab-content" style="display:none;">
+      <div class="filter-row">
+        <div class="filter-group">
+          <label><b>Filter:</b></label>
+          <select id="filterStatusAdm">
+            <option value="all">All</option>
+            <option value="pass">Pass</option>
+            <option value="fail">Fail</option>
+          </select>
+          <select id="filterSortAdm">
+            <option value="roll">Roll No</option>
+            <option value="highlow">% High → Low</option>
+            <option value="lowhigh">% Low → High</option>
+          </select>
+          <button onclick="loadAdmitTable()">Apply</button>
+        </div>
+        <div class="bulk-group">
+          <button class="action-btn print-btn" onclick="bulkPrint('admit')">Print Admit Cards (1/page)</button>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Roll No</th><th>App No</th><th>Name</th><th>Action</th></tr></thead>
+        <tbody id="admBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Print Modal -->
+  <div class="modal" id="myModal">
+    <div class="modal-content">
+      <span class="no-print" onclick="closeModal()" style="position:absolute;top:10px;right:20px;font-size:40px;cursor:pointer;color:#444;">×</span>
+      <div id="modalPrint" class="print-area"></div>
+    </div>
+  </div>
+
+  <script>
+    const subjects = ["Hindi", "English", "Math", "Science", "SST"];
+    const examCenter = "Govt. Inter College, Prayagraj";
+    const examPeriod = "18 February 2026 to 12 March 2026";
+    const examSchedule = [
+      { date: "18 Feb 2026", subject: "Hindi", shift: "Morning", time: "8:30 - 11:45 AM", maxMarks: 100 },
+      { date: "20 Feb 2026", subject: "English", shift: "Morning", time: "8:30 - 11:45 AM", maxMarks: 100 },
+      { date: "23 Feb 2026", subject: "Mathematics", shift: "Morning", time: "8:30 - 11:45 AM", maxMarks: 100 },
+      { date: "24 Feb 2026", subject: "Science", shift: "Morning", time: "8:30 - 11:45 AM", maxMarks: 100 },
+      { date: "25 Feb 2026", subject: "Social Science", shift: "Morning", time: "8:30 - 11:45 AM", maxMarks: 100 }
+    ];
+
+    let data = {};
+    let currentClass = "10";
+
+    function init() {
+      for (let c = 5; c <= 10; c++) {
+        data[c] = [];
+        for (let i = 1; i <= 60; i++) {
+          let total = 0, fail = false;
+          let marks = {};
+          subjects.forEach(s => {
+            let m = (i % 6 === 0) ? Math.floor(Math.random() * 25) : Math.floor(Math.random() * 60) + 35;
+            marks[s] = m;
+            total += m;
+            if (m < 33) fail = true;
+          });
+          let per = (total / 5).toFixed(1);
+          data[c].push({
+            roll: (c * 1000 + i).toString(),
+            app: `APP-UP-${c}0${i}`,
+            name: `Student ${i}`,
+            class: c,
+            marks,
+            total,
+            per,
+            status: fail ? "FAIL" : "PASS"
+          });
+        }
+      }
+      loadData();
+    }
+
+    function loadData() {
+      currentClass = document.getElementById("classPick").value;
+      const active = document.querySelector(".tab-btn.active").textContent.trim();
+      if (active.includes("Result")) loadResultTable();
+      else if (active.includes("All Subjects")) loadAllMarksTable();
+      else if (active.includes("Admit")) loadAdmitTable();
+    }
+
+    function loadResultTable() {
+      let html = "";
+      data[currentClass].forEach(s => {
+        html += `<tr>
+          <td>${s.roll}</td><td>${s.name}</td><td>${s.total}</td><td>${s.per}%</td>
+          <td>${s.status === "PASS" ? "B" : "E"}</td>
+          <td><span class="badge ${s.status.toLowerCase()}">${s.status}</span></td>
+        </tr>`;
+      });
+      document.getElementById("resBody").innerHTML = html;
+    }
+
+    function getFilteredStudents(isAdmit = false) {
+      const prefix = isAdmit ? "Adm" : "";
+      const status = document.getElementById(`filterStatus${prefix}`).value;
+      const sort = document.getElementById(`filterSort${prefix}`).value;
+      let list = [...data[currentClass]];
+      if (status !== "all") list = list.filter(s => s.status === status.toUpperCase());
+      if (sort === "highlow") list.sort((a, b) => b.per - a.per);
+      else if (sort === "lowhigh") list.sort((a, b) => a.per - b.per);
+      else list.sort((a, b) => Number(a.roll) - Number(b.roll));
+      return list;
+    }
+
+    function loadAllMarksTable() {
+      let html = "";
+      getFilteredStudents().forEach(s => {
+        html += `<tr>
+          <td>${s.roll}</td><td>${s.name}</td>
+          ${subjects.map(sub => `<td class="${s.marks[sub] < 33 ? 'low-marks' : ''}">${s.marks[sub]}</td>`).join('')}
+          <td>${s.total}</td><td>${s.per}%</td><td>-</td>
+          <td><span class="badge ${s.status.toLowerCase()}">${s.status}</span></td>
+          <td><button class="print-single-btn" onclick="printSingleMarksheet('${s.roll}')">Print</button></td>
+        </tr>`;
+      });
+      document.getElementById("allMarksBody").innerHTML = html;
+    }
+
+    function loadAdmitTable() {
+      let html = "";
+      getFilteredStudents(true).forEach(s => {
+        html += `<tr>
+          <td>${s.roll}</td><td>${s.app}</td><td>${s.name}</td>
+          <td><button onclick="printSingle('admit','${s.roll}')" style="background:#388e3c;color:white;padding:6px 12px;border:none;border-radius:4px;">Print</button></td>
+        </tr>`;
+      });
+      document.getElementById("admBody").innerHTML = html;
+    }
+
+    // ── Marksheet HTML ───────────────────────────────────────────────
+    function getMarksheetHTML(s) {
+      const rows = subjects.map(sub => `
+        <tr>
+          <td>${sub}</td>
+          <td>100</td>
+          <td class="${s.marks[sub] < 33 ? 'low-marks' : ''}">${s.marks[sub]}</td>
+          <td>${s.marks[sub] < 33 ? 'Fail' : 'Pass'}</td>
+        </tr>
+      `).join('');
+
+      return `
+        <div style="width:100%; height:100%; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; font-family:Arial;">
+          <h2 style="color:#1976d2; margin:20px 0 12px;">UP BOARD RESULT 2026</h2>
+          <p style="font-size:1.3rem; margin:8px 0;"><b>Name:</b> ${s.name}</p>
+          <p style="margin:6px 0;"><b>Roll No:</b> ${s.roll} • <b>App No:</b> ${s.app}</p>
+          <table style="width:90%; margin:25px auto 35px; border-collapse:collapse; border:1px solid #ccc;">
+            <thead style="background:#f5f5f5;">
+              <tr><th>Subject</th><th>Max Marks</th><th>Obtained Marks</th><th>Result</th></tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+          <div style="font-size:1.5rem; margin-top:25px; font-weight:bold;">
+            Total: ${s.total}/500 • ${s.per}% • ${s.status}
+          </div>
+        </div>
+      `;
+    }
+
+    // ── Admit Card HTML ───────────────────────────────────────────────
+    function getAdmitHTML(s) {
+      const scheduleRows = examSchedule.map(ex => `
+        <tr>
+          <td>${ex.date}</td>
+          <td>${ex.subject}</td>
+          <td>${ex.shift}</td>
+          <td>${ex.time}</td>
+          <td>${ex.maxMarks}</td>
+        </tr>
+      `).join('');
+
+      return `
+        <div style="width:100%; height:100%; padding:0 10mm; font-family:Arial; display:flex; flex-direction:column; justify-content:center;">
+          <div style="text-align:center; margin-bottom:25px;">
+            <h2 style="color:#d32f2f; margin:0;">SURAJ BOARD OF EDUCATION, U.P.</h2>
+            <h3 style="margin:8px 0;">HIGH SCHOOL EXAMINATION - 2026</h3>
+            <p style="font-size:1.4rem; font-weight:bold; margin:12px 0;">ADMIT CARD</p>
+          </div>
+          <table style="width:100%; margin-bottom:30px; border-collapse:collapse;">
+            <tr><td style="width:35%; padding:6px 0;"><b>Roll No</b></td><td style="border-bottom:1px solid #000;padding:6px 0;">${s.roll}</td></tr>
+            <tr><td style="padding:6px 0;"><b>Application No</b></td><td style="border-bottom:1px solid #000;padding:6px 0;">${s.app}</td></tr>
+            <tr><td style="padding:6px 0;"><b>Name</b></td><td style="border-bottom:1px solid #000;padding:6px 0;">${s.name}</td></tr>
+            <tr><td style="padding:6px 0;"><b>Father's Name</b></td><td style="border-bottom:1px solid #000;padding:6px 0;">${s.name} Kumar</td></tr>
+            <tr><td style="padding:6px 0;"><b>Class</b></td><td style="border-bottom:1px solid #000;padding:6px 0;">${s.class}</td></tr>
+            <tr><td style="padding:6px 0;"><b>Center</b></td><td style="border-bottom:1px solid #000;padding:6px 0;">${examCenter}</td></tr>
+            <tr><td style="padding:6px 0;"><b>Exam Period</b></td><td style="border-bottom:1px solid #000;padding:6px 0;">${examPeriod}</td></tr>
+          </table>
+          <div style="margin-top:20px;">
+            <h3 style="text-align:center; color:#d32f2f; margin-bottom:12px;">Exam Schedule</h3>
+            <table style="width:100%; font-size:0.95rem; border-collapse:collapse; border:1px solid #ccc;">
+              <thead style="background:#f8f8f8;">
+                <tr>
+                  <th style="padding:8px;border:1px solid #ccc;">Date</th>
+                  <th style="padding:8px;border:1px solid #ccc;">Subject</th>
+                  <th style="padding:8px;border:1px solid #ccc;">Shift</th>
+                  <th style="padding:8px;border:1px solid #ccc;">Time</th>
+                  <th style="padding:8px;border:1px solid #ccc;">Marks</th>
+                </tr>
+              </thead>
+              <tbody>${scheduleRows}</tbody>
+            </table>
+          </div>
+          <div style="margin-top:60px; display:flex; justify-content:space-between; font-size:1rem;">
+            <div style="text-align:center;"><p>________________________</p><p>Student Signature</p></div>
+            <div style="text-align:center;"><p>________________________</p><p>Principal / Seal</p></div>
+          </div>
+        </div>
+      `;
+    }
+
+    // ── Printing Functions ───────────────────────────────────────────────
+
+    function printSingleMarksheet(roll) {
+      const s = data[currentClass].find(st => st.roll === roll);
+      if (!s) return;
+      document.getElementById("modalPrint").innerHTML = 
+        `<div class="card one-per-page">${getMarksheetHTML(s)}</div>`;
+      document.getElementById("myModal").style.display = "flex";
+      setTimeout(() => window.print(), 300);
+    }
+
+    function bulkPrintMarksheets() {
+      const students = getFilteredStudents();
+      let html = "";
+      students.forEach(s => {
+        html += `<div class="card one-per-page">${getMarksheetHTML(s)}</div>`;
+      });
+      document.getElementById("modalPrint").innerHTML = html;
+      document.getElementById("myModal").style.display = "flex";
+      setTimeout(() => window.print(), 600);
+    }
+
+    function printSingle(type, roll) {
+      const student = data[currentClass].find(s => s.roll === roll);
+      if (!student) return;
+      const htmlContent = type === 'admit' ? getAdmitHTML(student) : getMarksheetHTML(student);
+      document.getElementById("modalPrint").innerHTML = 
+        `<div class="card one-per-page">${htmlContent}</div>`;
+      document.getElementById("myModal").style.display = "flex";
+      setTimeout(() => window.print(), 300);
+    }
+
+    function bulkPrint(type) {
+      const students = getFilteredStudents(type === 'admit');
+      if (!students.length) return alert("No students found");
+      const generator = type === 'admit' ? getAdmitHTML : getMarksheetHTML;
+      let html = "";
+      students.forEach(s => {
+        html += `<div class="card one-per-page">${generator(s)}</div>`;
+      });
+      document.getElementById("modalPrint").innerHTML = html;
+      document.getElementById("myModal").style.display = "flex";
+      setTimeout(() => window.print(), 600);
+    }
+
+    function switchTab(tab, btn) {
+      document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(tab + 'Tab').style.display = 'block';
+      btn.classList.add('active');
+      loadData();
+    }
+
+    function closeModal() {
+      document.getElementById("myModal").style.display = "none";
+      document.getElementById("modalPrint").innerHTML = "";
+    }
+
+    window.addEventListener('afterprint', closeModal);
+
+    window.onload = init;
+
+    function searchOnline() {
+      alert("Demo: Online result check not connected.");
+    }
+  </script>
+</body>
+</html>
